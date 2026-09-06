@@ -10,6 +10,8 @@ from collections import deque
 #
 class Solution:
     def closure(self, arr):
+        if not arr or not arr[0]:
+            return 0
         n, m = len(arr), len(arr[0])
         mark = [[0] * m for _ in range(n)]   # 每个 1 属于第几块,0 是还没编号
         sz = {}                              # 每块有多大
