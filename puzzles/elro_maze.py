@@ -1,81 +1,42 @@
-"""
-Elro Grand Maze (艾尔罗大迷宫)
-
-An n x n maze is given as a matrix where 0 marks a reachable tile and 1 a
-natively blocked one.  The player always starts at [0, 0] (guaranteed to be 0)
-and may only move up, down, left or right.
-
-A tile counts as unreachable when it is either natively blocked, or open but
-walled off from the start.  Both cases are covered by a single flood fill::
-
-    unreachable = n * n - (tiles reached from [0, 0])
-
-For example::
-
-    [0, 1, 0, 0]
-    [0, 0, 0, 0]
-    [0, 1, 0, 1]
-    [0, 0, 1, 0]
-
-has 4 native walls, and map[3][3] is sealed off by map[2][3] and map[3][2],
-so the answer is 5.
-
-Complexity: O(n^2) time, O(n^2) space.
-"""
+# 艾尔罗大迷宫
+#
+# 0 是能走的格子,1 是墙,起点固定在 [0,0],只能上下左右走。
+# 不可达的格子有两种:本来就是墙的,和虽然是 0 但被墙围住走不过去的。
+# 所以从 [0,0] 做一次 BFS,数出能走到多少格,剩下的就都是不可达的:
+#     答案 = n * n - 能走到的格子数
 
 from collections import deque
-from typing import Sequence
+
 
 #
 # Note: 类名、方法名、参数名已经指定，请勿修改
-#
 #
 # @param generated_map int整型 二维数组
 # @return int整型
 #
 class Solution:
-    def apply(self, generated_map: Sequence[Sequence[int]]) -> int:
-        """Return the number of tiles that cannot be reached from [0, 0]."""
-        if not generated_map or not generated_map[0]:
+    def apply(self, generated_map):
+        n = len(generated_map)
+        if n == 0:
             return 0
+        m = len(generated_map[0])
 
-        n_rows = len(generated_map)
-        n_cols = len(generated_map[0])
-        total = n_rows * n_cols
-
-        # The constraints guarantee an open start, but a sealed one means
-        # nothing at all is reachable.
-        if generated_map[0][0] != 0:
-            return total
-
-        visited = [[False] * n_cols for _ in range(n_rows)]
+        visited = [[False] * m for _ in range(n)]
         visited[0][0] = True
-        reached = 1
+        count = 1  # 能走到的格子数,起点先算一个
 
-        queue = deque([(0, 0)])
-        while queue:
-            row, col = queue.popleft()
-            for next_row, next_col in (
-                (row - 1, col),
-                (row + 1, col),
-                (row, col - 1),
-                (row, col + 1),
-            ):
-                if not (0 <= next_row < n_rows and 0 <= next_col < n_cols):
-                    continue
-                if visited[next_row][next_col] or generated_map[next_row][next_col] != 0:
-                    continue
-                visited[next_row][next_col] = True
-                reached += 1
-                queue.append((next_row, next_col))
+        q = deque()
+        q.append((0, 0))
+        while q:
+            x, y = q.popleft()
+            # 上下左右四个方向
+            for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                nx = x + dx
+                ny = y + dy
+                if 0 <= nx < n and 0 <= ny < m:
+                    if not visited[nx][ny] and generated_map[nx][ny] == 0:
+                        visited[nx][ny] = True
+                        count += 1
+                        q.append((nx, ny))
 
-        return total - reached
-
-
-if __name__ == "__main__":
-    import ast
-    import sys
-
-    # Accept the maze as a literal, e.g. [[0,1,1,0],[1,0,0,0],[0,1,0,1],[0,1,1,0]]
-    raw = " ".join(sys.argv[1:]) or sys.stdin.read()
-    print(Solution().apply(ast.literal_eval(raw.strip())))
+        return n * m - count

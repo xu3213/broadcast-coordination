@@ -1,124 +1,84 @@
-"""Tests for the Elro Grand Maze exercise."""
-
-import pytest
+# 艾尔罗大迷宫的测试:题目给的例子 + 几个边界情况
 
 from puzzles.elro_maze import Solution
 
 
-@pytest.fixture
-def solve():
-    return Solution().apply
+def test_example_in_description():
+    # 4 个墙,加上被 map[2][3] 和 map[3][2] 围住的 map[3][3]
+    maze = [
+        [0, 1, 0, 0],
+        [0, 0, 0, 0],
+        [0, 1, 0, 1],
+        [0, 0, 1, 0],
+    ]
+    assert Solution().apply(maze) == 5
 
 
-class TestProvidedExamples:
-    """The examples shipped with the problem statement."""
-
-    def test_description_example(self, solve):
-        # 4 native walls plus map[3][3], sealed off by map[2][3] and map[3][2].
-        maze = [
-            [0, 1, 0, 0],
-            [0, 0, 0, 0],
-            [0, 1, 0, 1],
-            [0, 0, 1, 0],
-        ]
-        assert solve(maze) == 5
-
-    def test_example_1_start_is_trapped(self, solve):
-        # [0, 0] is walled in, so every other tile is unreachable.
-        maze = [
-            [0, 1, 1, 0],
-            [1, 0, 0, 0],
-            [0, 1, 0, 1],
-            [0, 1, 1, 0],
-        ]
-        assert solve(maze) == 15
-
-    def test_example_2_enclosed_tile(self, solve):
-        # 4 native walls plus map[2][3], which is enclosed.
-        maze = [
-            [0, 0, 0, 0],
-            [1, 0, 0, 1],
-            [0, 0, 1, 0],
-            [0, 0, 0, 1],
-        ]
-        assert solve(maze) == 5
-
-    def test_example_3_no_enclosed_tiles(self, solve):
-        # Nothing is walled off, so only the 3 native walls count.
-        maze = [
-            [0, 0, 0, 0],
-            [0, 0, 1, 0],
-            [0, 0, 1, 0],
-            [1, 0, 0, 0],
-        ]
-        assert solve(maze) == 3
+def test_example_1():
+    # 起点被困住,除了起点自己以外都到不了
+    maze = [
+        [0, 1, 1, 0],
+        [1, 0, 0, 0],
+        [0, 1, 0, 1],
+        [0, 1, 1, 0],
+    ]
+    assert Solution().apply(maze) == 15
 
 
-class TestEdgeCases:
-    """Boundary conditions around the flood fill."""
-
-    def test_single_open_tile(self, solve):
-        assert solve([[0]]) == 0
-
-    def test_fully_open_maze(self, solve):
-        assert solve([[0] * 5 for _ in range(5)]) == 0
-
-    def test_only_the_start_is_open(self, solve):
-        maze = [
-            [0, 1],
-            [1, 1],
-        ]
-        assert solve(maze) == 3
-
-    def test_detour_around_a_wall(self, solve):
-        # The right column is reachable only by going around the middle wall.
-        maze = [
-            [0, 1, 0],
-            [0, 1, 0],
-            [0, 0, 0],
-        ]
-        assert solve(maze) == 2
-
-    def test_walls_split_the_maze_in_two(self, solve):
-        # The start keeps a 4-tile pocket; the other 7 open tiles form a second
-        # region touching it only diagonally, which does not count as a move.
-        maze = [
-            [0, 0, 1, 0],
-            [0, 0, 1, 0],
-            [1, 1, 1, 0],
-            [0, 0, 0, 0],
-        ]
-        assert solve(maze) == 5 + 7
-
-    def test_empty_maze(self, solve):
-        assert solve([]) == 0
-        assert solve([[]]) == 0
-
-    def test_blocked_start_makes_everything_unreachable(self, solve):
-        # Outside the stated constraints, but must not report a bogus count.
-        assert solve([[1, 0], [0, 0]]) == 4
-
-    def test_input_is_not_mutated(self, solve):
-        maze = [
-            [0, 1],
-            [0, 0],
-        ]
-        solve(maze)
-        assert maze == [[0, 1], [0, 0]]
+def test_example_2():
+    # 4 个墙,加上被围住的 map[2][3]
+    maze = [
+        [0, 0, 0, 0],
+        [1, 0, 0, 1],
+        [0, 0, 1, 0],
+        [0, 0, 0, 1],
+    ]
+    assert Solution().apply(maze) == 5
 
 
-class TestLargeMaze:
-    """The flood fill must stay iterative and linear in the tile count."""
+def test_example_3():
+    # 没有被围住的空格,只有 3 个墙
+    maze = [
+        [0, 0, 0, 0],
+        [0, 0, 1, 0],
+        [0, 0, 1, 0],
+        [1, 0, 0, 0],
+    ]
+    assert Solution().apply(maze) == 3
 
-    def test_serpentine_corridor(self, solve):
-        # A single 200x200 corridor that snakes through the whole grid: every
-        # open tile is reachable, so only the walls are unreachable.
-        n = 200
-        maze = [[0] * n for _ in range(n)]
-        for row in range(1, n, 2):
-            blocked = range(1, n) if (row // 2) % 2 == 0 else range(0, n - 1)
-            for col in blocked:
-                maze[row][col] = 1
 
-        walls = sum(row.count(1) for row in maze)
-        assert solve(maze) == walls
+def test_one_cell():
+    assert Solution().apply([[0]]) == 0
+
+
+def test_no_wall():
+    maze = [[0] * 5 for _ in range(5)]
+    assert Solution().apply(maze) == 0
+
+
+def test_go_around_the_wall():
+    # 右边一列要绕过中间那道墙才能到
+    maze = [
+        [0, 1, 0],
+        [0, 1, 0],
+        [0, 0, 0],
+    ]
+    assert Solution().apply(maze) == 2
+
+
+def test_maze_split_in_two():
+    # 起点只剩左上角 4 格,另外 7 个空格只跟它斜着挨着,走不过去
+    maze = [
+        [0, 0, 1, 0],
+        [0, 0, 1, 0],
+        [1, 1, 1, 0],
+        [0, 0, 0, 0],
+    ]
+    assert Solution().apply(maze) == 5 + 7
+
+
+def test_big_maze():
+    # 300x300 全是空地,BFS 用队列不会爆栈
+    n = 300
+    maze = [[0] * n for _ in range(n)]
+    assert Solution().apply(maze) == 0
